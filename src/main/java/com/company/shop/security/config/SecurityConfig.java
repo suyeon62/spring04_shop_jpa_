@@ -53,7 +53,7 @@ public class SecurityConfig {
 	   
 	   //요청에 의한 인가(권한) 검사 시작
 	   http.authorizeHttpRequests(authorize -> authorize 
-			   						.requestMatchers("/","/images/**","/member/signup","/board/list/**").permitAll() // 로그인 없이 접근 허용한다
+			   						.requestMatchers("/","/images/**","/member/signup","/board/list/**","/swagger-ui/**","/v3/api-docs/**").permitAll() // 로그인 없이 접근 허용한다
 			   						.anyRequest().authenticated());// 그외 모든 요청에 대해서 인증(로그인)이 되어야 한다.
 	   //.anyRequest().permitAll());// 그외 모든 요청에 대해서 인증(로그인)이 되어야 한다. 모든요쳉에대하여 굿
 	   return http.build();

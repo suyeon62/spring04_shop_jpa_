@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 //import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,11 +32,15 @@ import com.company.shop.board.dto.PageDTO;
 import com.company.shop.board.service.BoardService;
 import com.company.shop.common.file.FileUpload;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 
+@Tag(name="게사판 관련", description="사용자 관련 API")
 @Slf4j
 @CrossOrigin("*")
 @RestController
@@ -55,6 +61,7 @@ public class BoardController {
 	// http://localhost:8090/board/list/1
 
 	// 페이지 입력받아서 페이지당 리스트 가져오기 3페이지 (0 5 10)
+	@Operation(summary="게시판 리스트")
 	@GetMapping("/board/list/{currentPage}")
 	public ResponseEntity<Map<String, Object>> listExecute(@PathVariable("currentPage") int currentPage) {
 		Map<String, Object> map = new HashMap<>();
@@ -76,12 +83,13 @@ public class BoardController {
 		return ResponseEntity.ok(map);
 	}
 
-	// 첨부파일이있을때 @RequestBody X
+	@Operation(summary="게시판 글쓰기")
+	// 첨부파일이 있을 때 @RequestBody를 선언하면 안 된다.
 	// 상세페이지 save
 	// 답변글이 있을때 ref값을 re_step, re_level 꼭 넝어 줘야한다
-	@PostMapping("/board/write")
+	@PostMapping(value="/board/write", consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<String> writeProExecute(BoardDTO dto, PageDTO pv, HttpServletRequest req,
-			HttpSession session) {
+			HttpSession session, @Parameter(description = "첨부파일") @RequestPart("filename") MultipartFile filename) {
 		MultipartFile file = dto.getFilename();
 		log.info("subject:{}, content:{}", dto.getSubject(), dto.getContent());
 		// 첨부파일 넣기 싫으면 이거 주석
@@ -97,6 +105,7 @@ public class BoardController {
 		return ResponseEntity.ok(String.valueOf(1));
 	}
 
+	@Operation(summary="게시판 상세페이지")
 	@GetMapping("/board/view/{num}")
 	public ResponseEntity<BoardDTO> viewExecute(@PathVariable("num") int num) {
 		BoardDTO DTo = boardService.contentProcess(num);
@@ -105,10 +114,11 @@ public class BoardController {
 	}
 //
 	// 수정
-	@PutMapping("/board/update")
+	@Operation(summary="게시판 수정")
+	@PutMapping(value="/board/update", consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<Object> updateExecute(BoardDTO dto, HttpServletRequest req) {
 		MultipartFile file = dto.getFilename();
-		log.info(":{}", dto);
+		//log.info(":{}", dto);
 		if (file != null && !file.isEmpty()) {
 			UUID random = FileUpload.saveCopyFile(file, filePath);
 			dto.setUpload(random + "_" + file.getOriginalFilename());
@@ -118,6 +128,7 @@ public class BoardController {
 	}
 
 	// 삭제
+	@Operation(summary="게시판 삭제")
 	@DeleteMapping("/board/delete/{num}")
 	public ResponseEntity<Object> deleteExecute(@PathVariable("num") int num) {
 		boardService.deleteProcess(num, filePath);
@@ -125,6 +136,7 @@ public class BoardController {
 		return ResponseEntity.ok(null);
 	}
 
+	@Operation(summary="게시판 다운로드")
 	@GetMapping("board/contentdownload/{filename}")
 	public ResponseEntity<Resource> downloadExecute(@PathVariable("filename") String filename) throws IOException {
 		// 실제 파일명만 가져오도록 문자로 제거
